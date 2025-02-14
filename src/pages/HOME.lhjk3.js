@@ -1,76 +1,62 @@
 $w.onReady(function () {
-    // Initialize page elements
-    const uploadButton = $w('#uploadButton');
-    const questionInput = $w('#questionInput');
-    const resultText = $w('#resultText');
-    const loadingText = $w('#loadingText');  // "Processing..." text element
-    const loadingImage = $w('#loadingImage'); // Spinner GIF element
-    const errorMessage = $w('#errorMessage');
+    const uploadButton = $w("#uploadButton");
+    const questionInput = $w("#questionInput");
+    const resultText = $w("#resultText");
+    const loadingText = $w("#loadingText");
+    const loadingImage = $w("#loadingImage");
+    const errorMessage = $w("#errorMessage");
 
-    // Hide elements initially using Wix Velo methods
-    if (loadingText) loadingText.collapse();
-    if (loadingImage) loadingImage.collapse();
-    if (errorMessage) errorMessage.collapse();
+    // Hide elements initially
+    loadingText.collapse();
+    loadingImage.collapse();
+    errorMessage.collapse();
 
-    // Upload button event listener
-    uploadButton.onChange(async (event) => {
+    // Fix: Use onUploadChange instead of onChange
+    uploadButton.onUploadChange(async (event) => {
         try {
-            // Reset UI states
-            if (resultText) resultText.html = "";
-            if (errorMessage) errorMessage.collapse();
-            showLoading(true); // Show loading indicators
+            // Reset UI
+            resultText.html = "";
+            errorMessage.collapse();
+            showLoading(true);
 
-            // Get user inputs
-            const file = event.target.files[0];
-            const question = questionInput.value.trim() || "Describe this image";
+            // Get uploaded file
+            const file = event.target.files[0];  // Corrected
+            if (!file) throw new Error("No file uploaded.");
+            if (!file.type.startsWith("image/")) throw new Error("Only image files are allowed.");
 
-            // Validate input
-            if (!file) throw new Error("No image selected. Please upload an image.");
-            if (!file.type.startsWith('image/')) throw new Error("Invalid file type. Please upload an image file.");
-
-            // Read image as base64
+            // Convert file to Base64
             const imgData = await readFileAsBase64(file);
-            
-            // Call external API
-            const response = await fetch('http://YOUR_LAPTOP_IP:5000/infer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imgData, question: question })
+
+            // Send to API
+            const response = await fetch("http://YOUR_LAPTOP_IP:5000/infer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imgData, question: questionInput.value || "Describe this image" }),
             });
 
-            // Handle response
             if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
             const data = await response.json();
-            if (data.status === 'success') {
-                if (resultText) resultText.html = formatResponse(data.response);
-            } else {
-                throw new Error(data.message || "Inference failed. Please try again.");
-            }
-            
+            resultText.html = formatResponse(data.response);
         } catch (error) {
-            if (errorMessage) {
-                errorMessage.text = error.message;
-                errorMessage.expand();
-            }
-            console.error("Inference error:", error);
+            errorMessage.text = error.message;
+            errorMessage.expand();
+            console.error("Upload Error:", error);
         } finally {
-            showLoading(false); // Hide loading indicators
+            showLoading(false);
         }
     });
 
-    // Function to show/hide loading indicators properly
     function showLoading(isLoading) {
         if (isLoading) {
-            if (loadingText) loadingText.expand();
-            if (loadingImage) loadingImage.expand();
+            loadingText.expand();
+            loadingImage.expand();
         } else {
-            if (loadingText) loadingText.collapse();
-            if (loadingImage) loadingImage.collapse();
+            loadingText.collapse();
+            loadingImage.collapse();
         }
     }
 
-    // Helper function to read files
     function readFileAsBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -80,10 +66,7 @@ $w.onReady(function () {
         });
     }
 
-    // Function to format AI response
     function formatResponse(text) {
-        return text.split('\n')
-            .map(paragraph => `<p class="response-paragraph">${paragraph}</p>`)
-            .join('\n');
+        return text.split("\n").map(paragraph => `<p class="response">${paragraph}</p>`).join("\n");
     }
 });
