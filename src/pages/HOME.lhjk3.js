@@ -1,15 +1,15 @@
 $w.onReady(function () {
     const uploadButton = $w("#uploadButton"); // File upload button
     const previewImage = $w("#previewImage"); // Image preview
-    const questionInput = $w("#questionInput"); // User text input
+    const questionInput = $w("#questionInput"); // User input for question
     const submitButton = $w("#submitButton"); // Submit button
-    const resultText = $w("#resultText"); // Response display
+    const resultText = $w("#resultText"); // Display response
     const loadingText = $w("#loadingText"); // Loading indicator
     const errorMessage = $w("#errorMessage"); // Error message display
 
     let uploadedImageUrl = ""; // Store uploaded image URL
 
-    // Hide loading/error elements initially
+    // Hide loading and error elements initially
     loadingText.hide();
     errorMessage.hide();
 
@@ -35,17 +35,17 @@ $w.onReady(function () {
         // Reset error message
         errorMessage.hide();
 
-        // 🖼️ **Show Temporary Image Preview**
+        // 🖼️ **Show Temporary Image Preview Instantly**
         const reader = new FileReader();
         reader.onload = (event) => {
-            previewImage.src = event.target.result; // Show image preview instantly
+            previewImage.src = event.target.result; // Show local image preview
         };
-        reader.readAsDataURL(file); // Convert file to base64 for preview
+        reader.readAsDataURL(file);
 
         // 🚀 **Upload Image to Wix Media**
         file.upload()
             .then(uploadedFile => {
-                uploadedImageUrl = uploadedFile.url; // Store final uploaded image URL
+                uploadedImageUrl = uploadedFile.url; // Store real uploaded image URL
                 previewImage.src = uploadedImageUrl; // Update preview with real image
             })
             .catch(error => {
