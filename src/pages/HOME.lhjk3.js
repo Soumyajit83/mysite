@@ -14,13 +14,14 @@ $w.onReady(function () {
 
     uploadButton.onChange(() => {
         const uploadedFiles = uploadButton.value;
+
         if (uploadedFiles.length === 0) {
             errorMessage.text = "No file selected.";
             errorMessage.expand();
             return;
         }
 
-        const file = uploadedFiles[0];
+        const file = uploadedFiles[0]; // Get the selected file object
 
         // Validate file type
         if (!file.type.startsWith("image/")) {
@@ -32,18 +33,18 @@ $w.onReady(function () {
         // 🖼️ **Step 1: Show Temporary Image Preview**
         const reader = new FileReader();
         reader.onload = (event) => {
-            previewImage.src = event.target.result; // Show image before upload
+            previewImage.src = event.target.result; // Show preview instantly
         };
-        reader.readAsDataURL(file); // Convert to temporary preview
+        reader.readAsDataURL(file); // Convert to Base64 for preview
 
         // Show loading state
         showLoading(true);
 
         // 🖼️ **Step 2: Upload Image to Wix Media**
-        uploadFileToWix(file)
-            .then(imgUrl => {
-                previewImage.src = imgUrl; // Replace temp preview with real uploaded URL
-                return convertToBase64(imgUrl);
+        file.upload()
+            .then(uploadedFile => {
+                previewImage.src = uploadedFile.url; // Set final uploaded image
+                return convertToBase64(uploadedFile.url);
             })
             .then(imgData => sendToAPI(imgData))
             .catch(error => {
@@ -53,14 +54,6 @@ $w.onReady(function () {
             })
             .finally(() => showLoading(false));
     });
-
-    function uploadFileToWix(file) {
-        return file.upload()
-            .then(uploadedFile => uploadedFile.url)
-            .catch(error => {
-                throw new Error("Upload to Wix Media failed: " + error.message);
-            });
-    }
 
     function sendToAPI(imgData) {
         return fetch("http://YOUR_LAPTOP_IP:5000/infer", {
