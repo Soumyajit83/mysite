@@ -1,5 +1,6 @@
 $w.onReady(function () {
-    const uploadButton = $w("#uploadButton");
+    // Select elements
+    const uploadButton = $w("#uploadButton"); // Now using a real File Upload Button
     const previewImage = $w("#previewImage");
     const questionInput = $w("#questionInput");
     const resultText = $w("#resultText");
@@ -12,6 +13,7 @@ $w.onReady(function () {
     loadingImage.collapse();
     errorMessage.collapse();
 
+    // When file is uploaded
     uploadButton.onChange(() => {
         const uploadedFiles = uploadButton.value;
         if (uploadedFiles.length === 0) {
@@ -21,7 +23,7 @@ $w.onReady(function () {
         }
 
         const file = uploadedFiles[0];
-
+        
         // Validate file type
         if (!file.type.startsWith("image/")) {
             errorMessage.text = "Only image files are allowed.";
@@ -29,20 +31,13 @@ $w.onReady(function () {
             return;
         }
 
-        // 🖼️ **Step 1: Show Temporary Image Preview**
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            previewImage.src = event.target.result; // Show image before upload
-        };
-        reader.readAsDataURL(file); // Convert to temporary preview
-
         // Show loading state
         showLoading(true);
 
-        // 🖼️ **Step 2: Upload Image to Wix Media**
+        // Upload file to Wix Media Manager
         uploadFileToWix(file)
             .then(imgUrl => {
-                previewImage.src = imgUrl; // Replace temp preview with real uploaded URL
+                previewImage.src = imgUrl;
                 return convertToBase64(imgUrl);
             })
             .then(imgData => sendToAPI(imgData))
