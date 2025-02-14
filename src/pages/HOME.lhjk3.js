@@ -1,5 +1,8 @@
+import { mediaManager } from 'wix-media-backend';
+
 $w.onReady(function () {
     const uploadButton = $w("#uploadButton");
+    const previewImage = $w("#previewImage");
     const questionInput = $w("#questionInput");
     const resultText = $w("#resultText");
     const loadingText = $w("#loadingText");
@@ -11,41 +14,43 @@ $w.onReady(function () {
     loadingImage.collapse();
     errorMessage.collapse();
 
-    // Fix: Use onUploadChange instead of onChange
-    uploadButton.onUploadChange(async (event) => {
-        try {
-            // Reset UI
-            resultText.html = "";
-            errorMessage.collapse();
-            showLoading(true);
+    // Button click triggers file upload
+    uploadButton.onClick(() => {
+        wixMedia.promptUpload()
+            .then(uploadedFile => {
+                if (!uploadedFile) throw new Error("No file selected");
+                if (!uploadedFile.type.startsWith("image/")) throw new Error("Only images are allowed");
 
-            // Get uploaded file
-            const file = event.target.files[0];  // Corrected
-            if (!file) throw new Error("No file uploaded.");
-            if (!file.type.startsWith("image/")) throw new Error("Only image files are allowed.");
-
-            // Convert file to Base64
-            const imgData = await readFileAsBase64(file);
-
-            // Send to API
-            const response = await fetch("http://YOUR_LAPTOP_IP:5000/infer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: imgData, question: questionInput.value || "Describe this image" }),
+                // Show image preview
+                previewImage.src = uploadedFile.url;
+                
+                return convertToBase64(uploadedFile.url);
+            })
+            .then(imgData => sendToAPI(imgData))
+            .catch(error => {
+                errorMessage.text = error.message;
+                errorMessage.expand();
+                console.error("Upload Error:", error);
             });
+    });
 
-            if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
-            const data = await response.json();
+    function sendToAPI(imgData) {
+        showLoading(true);
+        fetch("http://YOUR_LAPTOP_IP:5000/infer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: imgData, question: questionInput.value || "Describe this image" }),
+        })
+        .then(response => response.json())
+        .then(data => {
             resultText.html = formatResponse(data.response);
-        } catch (error) {
+        })
+        .catch(error => {
             errorMessage.text = error.message;
             errorMessage.expand();
-            console.error("Upload Error:", error);
-        } finally {
-            showLoading(false);
-        }
-    });
+        })
+        .finally(() => showLoading(false));
+    }
 
     function showLoading(isLoading) {
         if (isLoading) {
@@ -57,13 +62,15 @@ $w.onReady(function () {
         }
     }
 
-    function readFileAsBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
+    function convertToBase64(imageUrl) {
+        return fetch(imageUrl)
+            .then(response => response.blob())
+            .then(blob => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            }));
     }
 
     function formatResponse(text) {
