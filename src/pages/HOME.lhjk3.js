@@ -3,21 +3,21 @@ $w.onReady(function () {
     const uploadButton = $w('#uploadButton');
     const questionInput = $w('#questionInput');
     const resultText = $w('#resultText');
-    const loadingText = $w('#loadingText');  // "Loading..." text element
+    const loadingText = $w('#loadingText');  // "Processing..." text element
     const loadingImage = $w('#loadingImage'); // Spinner GIF element
     const errorMessage = $w('#errorMessage');
 
-    // Hide elements initially
-    if (loadingText) loadingText.hide();
-    if (loadingImage) loadingImage.hide();
-    if (errorMessage) errorMessage.hide();
+    // Hide elements initially using Wix Velo methods
+    if (loadingText) loadingText.collapse();
+    if (loadingImage) loadingImage.collapse();
+    if (errorMessage) errorMessage.collapse();
 
     // Upload button event listener
     uploadButton.onChange(async (event) => {
         try {
             // Reset UI states
             if (resultText) resultText.html = "";
-            if (errorMessage) errorMessage.hide();
+            if (errorMessage) errorMessage.collapse();
             showLoading(true); // Show loading indicators
 
             // Get user inputs
@@ -51,7 +51,7 @@ $w.onReady(function () {
         } catch (error) {
             if (errorMessage) {
                 errorMessage.text = error.message;
-                errorMessage.show("fade");
+                errorMessage.expand();
             }
             console.error("Inference error:", error);
         } finally {
@@ -59,14 +59,14 @@ $w.onReady(function () {
         }
     });
 
-    // Function to show/hide loading indicators
+    // Function to show/hide loading indicators properly
     function showLoading(isLoading) {
         if (isLoading) {
-            if (loadingText) loadingText.show("fade");
-            if (loadingImage) loadingImage.show("fade");
+            if (loadingText) loadingText.expand();
+            if (loadingImage) loadingImage.expand();
         } else {
-            if (loadingText) loadingText.hide("fade");
-            if (loadingImage) loadingImage.hide("fade");
+            if (loadingText) loadingText.collapse();
+            if (loadingImage) loadingImage.collapse();
         }
     }
 
